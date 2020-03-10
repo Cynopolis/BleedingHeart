@@ -7,23 +7,36 @@
 #define valvePin1 2 // control forward valve
 #define valvePin2 4 // control return valve
 
-double motorSpeed = 100; // 0 to 255
-int heartRate = 0; // Controls the speed of the valve actuation (Typically 50-120)
+double motorSpeed = 0; // 0 to 255
+int heartRate = 60; // Controls the speed of the valve actuation (Typically 50-120)
 double pressure = 0; // pressure read from transducer in kPa
-double targetPressure = 0; //target pressure the system should be at in kPa. (Typically 5-25kPa)
+double targetPressure = 3; //target pressure the system should be at in kPa. (Typically 5-25kPa)
 String data = "";
+double runningPressure[10] = {0,0,0,0,0,0,0,0,0,0};
 
-PID pressurePID(&pressure, &motorSpeed, &targetPressure, 30, 5, 1, DIRECT);
+PID pressurePID(&pressure, &motorSpeed, &targetPressure, 0.1, 12, 0.19, DIRECT);
 
-void setMotorSpeed(){
-  pressure = (analogRead(pressurePin)/409.5)*6.89476; // 0 - 4095. (0 - 10 PSI)
-  pressurePID.Compute();
+double getPressure(){
+  //pressure = map(analogRead(pressurePin), 0, 1023, 0, 80)-54; // 0 - 1023. (0 - 80 PSI)
+  double sum = 0;
+  for(int i = 0; i < 9; i++){
+    sum += runningPressure[i];
+    runningPressure[i] = runningPressure[i+1];
+  }
+  runningPressure[9] = map(analogRead(pressurePin), 0, 1023, 0, 80)-7;
+  sum += runningPressure[9];
+  pressure = sum/10;
+  return pressure;
+}
+
+void setMotorSpeed(int motorSpeed){
   if(heartRate <= 0){
     analogWrite(motorPin, 0);
   }
   else{
-    analogWrite(motorPin, (int)motorSpeed);
+    analogWrite(motorPin, motorSpeed);
   }
+  //printPID();
 }
 
 void heartBeat(){ //turns the valves on and off to simulate one heart beat
@@ -33,16 +46,18 @@ void heartBeat(){ //turns the valves on and off to simulate one heart beat
   //delay(delayTime);
   unsigned long startTime = millis();
   while(millis()-startTime < delayTime){
-    setMotorSpeed();
-    printPID();
+    getPressure();
+    pressurePID.Compute();
+    setMotorSpeed((int)motorSpeed);
   }
   digitalWrite(valvePin1, LOW);
   digitalWrite(valvePin2, HIGH);
   //delay(delayTime);
   startTime = millis();
   while(millis()-startTime < delayTime){
-    setMotorSpeed();
-    printPID();
+    getPressure();
+    pressurePID.Compute();
+    setMotorSpeed((int)motorSpeed);
   }
   digitalWrite(valvePin2, LOW);
 } 
@@ -64,10 +79,16 @@ void processString(){
     int fillTime = data.substring(5, data.length()).toInt();
     digitalWrite(valvePin1, HIGH);
     digitalWrite(valvePin2, HIGH);
-    analogWrite(motorPin, 255);
-    delay(fillTime*1000);
+    analogWrite(motorPin, 0);
+    //double foo = targetPressure;
+    //targetPressure = 10000;
+    unsigned long startTime = millis();
+    while(millis()-startTime < fillTime*1000){
+      setMotorSpeed(255);
+    }
     digitalWrite(valvePin1, LOW);
     digitalWrite(valvePin2, LOW);
+    //targetPressure = foo;
   }
 }
 
@@ -104,6 +125,7 @@ void setup() {
   Serial.begin(115200);
   pressurePID.SetOutputLimits(0, 255);
   pressurePID.SetMode(AUTOMATIC);
+  pressurePID.SetSampleTime(10);
 }
 
 void loop() {
@@ -113,7 +135,8 @@ void loop() {
     getData();
     processString();
   }
-  setMotorSpeed();
+  getPressure();
+  pressurePID.Compute();
   printPID();
 
 }
