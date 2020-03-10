@@ -9,12 +9,12 @@
 
 double motorSpeed = 0; // 0 to 255
 int heartRate = 60; // Controls the speed of the valve actuation (Typically 50-120)
-double pressure = 0; // pressure read from transducer in kPa
-double targetPressure = 3; //target pressure the system should be at in kPa. (Typically 5-25kPa)
+double pressure = 0; // pressure read from transducer in PSI
+double targetPressure = 1.5; //target pressure the system should be at in PSI. (Typically 0.5-5PSI)
 String data = "";
-double runningPressure[10] = {0,0,0,0,0,0,0,0,0,0};
+double runningPressure[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-PID pressurePID(&pressure, &motorSpeed, &targetPressure, 0.1, 12, 0.19, DIRECT);
+PID pressurePID(&pressure, &motorSpeed, &targetPressure, 6.5, 0.8, 0.03, DIRECT);
 
 double getPressure(){
   //pressure = map(analogRead(pressurePin), 0, 1023, 0, 80)-54; // 0 - 1023. (0 - 80 PSI)
@@ -25,7 +25,7 @@ double getPressure(){
   }
   runningPressure[9] = map(analogRead(pressurePin), 0, 1023, 0, 80)-7;
   sum += runningPressure[9];
-  pressure = sum/10;
+  pressure = sum/15;
   return pressure;
 }
 
@@ -36,14 +36,17 @@ void setMotorSpeed(int motorSpeed){
   else{
     analogWrite(motorPin, motorSpeed);
   }
-  //printPID();
+  printPID();
 }
 
 void heartBeat(){ //turns the valves on and off to simulate one heart beat
   if(heartRate <= 0){return;}
+  double systolic = targetPressure*2;
+  double diastolic = targetPressure;
   int delayTime = (60000)/(heartRate*2); // half the time of a single heartbeat in ms
+  
   digitalWrite(valvePin1, HIGH);
-  //delay(delayTime);
+  targetPressure = systolic;
   unsigned long startTime = millis();
   while(millis()-startTime < delayTime){
     getPressure();
@@ -52,6 +55,7 @@ void heartBeat(){ //turns the valves on and off to simulate one heart beat
   }
   digitalWrite(valvePin1, LOW);
   digitalWrite(valvePin2, HIGH);
+  targetPressure = diastolic;
   //delay(delayTime);
   startTime = millis();
   while(millis()-startTime < delayTime){
@@ -73,7 +77,7 @@ void processString(){
     targetPressure = data.substring(5, data.length()).toDouble();
     Serial.print("Target Pressure set to ");
     Serial.print(targetPressure);
-    Serial.println(" kPa.");
+    Serial.println(" PSI.");
   }
   else if (data.substring(0, 5) == "FILL "){
     int fillTime = data.substring(5, data.length()).toInt();
