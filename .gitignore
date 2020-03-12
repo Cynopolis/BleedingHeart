@@ -1,0 +1,5 @@
+
+Interface/.idea
+Interface/venv/Lib
+Interface/venv/Scripts
+Interface/venv/pyvenv.cfg
