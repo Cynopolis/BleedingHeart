@@ -72,15 +72,20 @@ void processString(){
     Serial.print("Heart Rate set to ");
     Serial.print(heartRate);
     Serial.println(" BPM.");
+    delay(500);
   }
   else if (data.substring(0, 5) == "PRSR "){
     targetPressure = data.substring(5, data.length()).toDouble();
     Serial.print("Target Pressure set to ");
     Serial.print(targetPressure);
     Serial.println(" PSI.");
+    delay(500);
   }
   else if (data.substring(0, 5) == "FILL "){
     int fillTime = data.substring(5, data.length()).toInt();
+    Serial.print("Filling for ");
+    Serial.print(fillTime);
+    Serial.println(" seconds.");
     digitalWrite(valvePin1, HIGH);
     digitalWrite(valvePin2, HIGH);
     analogWrite(motorPin, 0);
@@ -114,7 +119,7 @@ void printPID(){
   Serial.print(pressure);
   Serial.print(", Target Pressure: ");
   Serial.print(targetPressure);
-  Serial.print(", Motor Speed:");
+  Serial.print(", Motor Speed: ");
   Serial.println(motorSpeed);
 }
 
