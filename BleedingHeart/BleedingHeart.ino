@@ -81,8 +81,9 @@ void processString(){
   }
   else if (data.substring(0, 5) == "FILL "){
     int fillTime = data.substring(5, data.length()).toInt();
-    digitalWrite(valvePin1, HIGH);
-    digitalWrite(valvePin2, HIGH);
+    //Not sure if the next two lines need to be high or low to open both solenoids
+    digitalWrite(valvePin1, LOW);
+    digitalWrite(valvePin2, LOW);
     analogWrite(motorPin, 0);
     //double foo = targetPressure;
     //targetPressure = 10000;
@@ -126,7 +127,7 @@ void setup() {
   pinMode(valvePin1, OUTPUT);
   pinMode(valvePin2, OUTPUT);
   digitalWrite(dirPin, LOW);
-  Serial.begin(115200);
+  Serial.begin(19200);
   pressurePID.SetOutputLimits(0, 255);
   pressurePID.SetMode(AUTOMATIC);
   pressurePID.SetSampleTime(10);
